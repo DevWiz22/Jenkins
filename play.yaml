@@ -1,0 +1,55 @@
+---
+- name: "instalare pachete"
+  hosts: clients
+  become: yes
+  vars:
+    user_name: "test_ansible_user"
+
+  vars:
+    app: default-jdk
+
+  tasks:
+    
+    - name: instalare OpenJDK
+      ansible.builtin.apt:
+        name: "{{ app }}"
+        state: present
+          
+    - name: "Verify app"
+      ansible.builtin.shell: javac --version
+      register: result
+
+    - name: Print return information from the previous task
+      ansible.builtin.debug:
+        msg: "{{ result.stdout }}"
+
+    - name: Touch the same file, but add/remove some permissions
+      ansible.builtin.file:
+        path: /usr/share/keyrings/jenkins.gpg
+        state: absent
+     
+    - name: "jenkins install"
+      ansible.builtin.shell: wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key |sudo gpg --dearmor -o /usr/share/keyrings/jenkins.gpg
+
+
+    - name: "jenkins install2"
+      ansible.builtin.shell: sudo sh -c 'echo deb [signed-by=/usr/share/keyrings/jenkins.gpg] http://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
+
+
+    - name: update
+      ansible.builtin.apt:
+        update_cache: yes 
+        force_apt_get: true 
+        name: "*"
+
+    
+           
+    - name: Install Jenkins
+      ansible.builtin.apt:
+        name: jenkins
+        state: latest
+
+    - name: Start service jenkins, if not started
+      ansible.builtin.service:
+        name: jenkins
+        state: started
